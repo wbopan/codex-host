@@ -23,6 +23,9 @@
     "trailingComma": "all"
   },
   "scripts": {
+    "fork:bootstrap": "node tools/fork/bootstrap.mjs",
+    "fork:build": "bash tools/fork/with-toolchain.sh node tools/fork/build.mjs",
+    "fork:check": "bash tools/fork/with-toolchain.sh npm run typecheck && bash tools/fork/with-toolchain.sh vitest run --config tests/vitest.config.js packages/adapters/claude-code/test/sdk-transport.test.ts tools/fork/launch.test.mjs",
     "start": "node tools/dev-desktop/run.mjs",
     "install:local": "bash scripts/install-local.sh",
     "build": "npm run build:typescript && npm run build:renderer && npm run build:rust",

@@ -6,6 +6,7 @@
 
 | 文档 | 内容与阅读时机 |
 | --- | --- |
+| [`project/personal-fork.md`](project/personal-fork.md) | 个人 fork 的本地工具链、源码构建、受保护启动和版本回退。 |
 | [`project/README.en.md`](project/README.en.md) | 英文项目介绍、安装方式和功能概览；维护英文用户入口时阅读。 |
 | [`project/README.ko.md`](project/README.ko.md) | 韩文项目介绍、安装方式和功能概览；维护韩文用户入口时阅读。 |
 | [`project/领域术语表.md`](project/领域术语表.md) | Harness、Model、Provider、Account、Thread 等领域术语；命名产品和代码概念前阅读。 |
