@@ -474,6 +474,7 @@ export class ClaudeSdkTransport implements ClaudeTurnTransport {
           ...this.#environment,
           CLAUDE_CODE_ENTRYPOINT: SESSION_ENTRYPOINT,
           CLAUDE_AGENT_SDK_CLIENT_APP: CLIENT_APP,
+          CODEXHOST_MCP_ELICITATION: "1",
         }),
         spawnClaudeCodeProcess: (options) => this.#spawn(options),
       },
@@ -720,7 +721,7 @@ export class ClaudeSdkTransport implements ClaudeTurnTransport {
       request.message.length > APPROVAL_DESCRIPTION_MAX_LENGTH ||
       !boundedDisplayText(request.serverName, 80)
     )
-      return Promise.resolve({ action: "decline" });
+      return Promise.resolve({ action: "cancel" });
     const requestId = `claude-elicitation-${++this.#interactionOrdinal}`;
     return new Promise((resolve) => {
       const onAbort = () => settle("cancel");

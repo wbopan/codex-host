@@ -1213,6 +1213,7 @@ describe("ClaudeSdkTransport Question callbacks", () => {
     expect(queryOptions).not.toHaveProperty("tools");
     expect(queryOptions.onUserDialog).toBeUndefined();
     expect(queryOptions.onElicitation).toBeTypeOf("function");
+    expect(queryOptions.env?.CODEXHOST_MCP_ELICITATION).toBe("1");
     const canUseTool = queryOptions.canUseTool;
     if (!canUseTool) throw new Error("SDK canUseTool callback was not configured");
 
@@ -2312,7 +2313,7 @@ describe("MCP approval elicitation", () => {
     ).rejects.toThrow("not pending");
     await value.transport.close();
   });
-  it("declines forms needing input, URL auth and unsupported schemas without showing an approval", async () => {
+  it("cancels unsupported requests without recording a user denial", async () => {
     const value = fixture();
     await value.transport.start();
     const events: ClaudeTurnEvent[] = [];
@@ -2331,7 +2332,7 @@ describe("MCP approval elicitation", () => {
     for (const input of variants)
       await expect(
         elicitationCallback(value)(input, { signal: new AbortController().signal }),
-      ).resolves.toEqual({ action: "decline" });
+      ).resolves.toEqual({ action: "cancel" });
     expect(events).toEqual([]);
     completeTurn(value.fakeQuery);
     await turn;
