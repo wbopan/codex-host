@@ -24,6 +24,7 @@ describe("independent debug environment", () => {
     expect(env.CODEX_HOME).toBe("/private/debug/codex");
     expect(env.CODEX_SQLITE_HOME).toBe(env.CODEX_HOME);
     expect(env.CLAUDE_CONFIG_DIR).toBe("/private/debug/claude");
+    expect(env.CLAUDE_SECURESTORAGE_CONFIG_DIR).toBe("");
     expect(env.CODEXHOST_HARNESS_BROKER_DIR).toBe("/private/debug/broker");
     for (const name of [
       "CODEXHOST_RUNTIME_TOKEN",
@@ -37,4 +38,16 @@ describe("independent debug environment", () => {
       expect(env).not.toHaveProperty(name);
     }
   });
+
+  it.each(["", "/Users/example/custom auth"])(
+    "preserves the explicit credential store %j while isolating Claude state",
+    (credentialStore) => {
+      const env = debugEnvironment(
+        { CLAUDE_SECURESTORAGE_CONFIG_DIR: credentialStore },
+        "/private/debug",
+      );
+      expect(env.CLAUDE_SECURESTORAGE_CONFIG_DIR).toBe(credentialStore);
+      expect(env.CLAUDE_CONFIG_DIR).toBe("/private/debug/claude");
+    },
+  );
 });

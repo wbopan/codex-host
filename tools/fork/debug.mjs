@@ -39,6 +39,9 @@ export function debugEnvironment(environment, instance) {
     CODEXHOST_HARNESS_BROKER_DIR: path.join(instance, "broker"),
     CODEXHOST_CLAUDE_BROKER_DESCRIPTOR: path.join(instance, "broker/claude-code-broker-v1.json"),
     CLAUDE_CONFIG_DIR: path.join(instance, "claude"),
+    // Empty selects Claude's default credential store, including its unscoped macOS Keychain
+    // entry. An explicit ~/.claude path selects a different, hashed Keychain entry.
+    CLAUDE_SECURESTORAGE_CONFIG_DIR: environment.CLAUDE_SECURESTORAGE_CONFIG_DIR ?? "",
     CODEXHOST_STARTUP_TRACE: "1",
   };
 }
@@ -113,14 +116,11 @@ export async function prepareInstance(instance, app = "/Applications/ChatGPT.app
     verifyApp(destination);
     const version = path.join(instance, "instance-version");
     if (!(await lstat(version).catch(() => null))) {
-      // Seed login once. Task databases, settings and live credential files are never linked.
+      // Seed Codex login once. Claude uses its native credential-store override independently of the
+      // isolated config directory, so no credential copy or token refresh sync is needed.
       await copyInitialFile(
         path.join(os.homedir(), ".codex/auth.json"),
         path.join(instance, "codex/auth.json"),
-      );
-      await copyInitialFile(
-        path.join(os.homedir(), ".claude/.credentials.json"),
-        path.join(instance, "claude/.credentials.json"),
       );
       const codexDirectory = path.join(instance, "codex");
       await writeFile(

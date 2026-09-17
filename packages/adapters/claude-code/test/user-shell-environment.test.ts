@@ -37,12 +37,17 @@ describe("User shell environment", () => {
     const run = vi.fn(async () => ({
       status: 0,
       stdout: Buffer.from(
-        `${marker}ANTHROPIC_AUTH_TOKEN=from-shell\0ANTHROPIC_BASE_URL=https://api.example.com\0PATH=/shell/bin\0CLAUDE_CONFIG_DIR=/shell/config\0`,
+        `${marker}ANTHROPIC_AUTH_TOKEN=from-shell\0ANTHROPIC_BASE_URL=https://api.example.com\0PATH=/shell/bin\0CLAUDE_CONFIG_DIR=/shell/config\0CLAUDE_SECURESTORAGE_CONFIG_DIR=/shell/credentials\0`,
       ),
     }));
 
     const result = await withUserShellEnvironment(
-      { HOME: "/Users/example", PATH: "/host/bin", SHELL: "/bin/zsh" },
+      {
+        HOME: "/Users/example",
+        PATH: "/host/bin",
+        SHELL: "/bin/zsh",
+        CLAUDE_SECURESTORAGE_CONFIG_DIR: "",
+      },
       { platform: "darwin", run },
     );
 
@@ -55,6 +60,7 @@ describe("User shell environment", () => {
       ANTHROPIC_AUTH_TOKEN: "from-shell",
       ANTHROPIC_BASE_URL: "https://api.example.com",
       CLAUDE_CONFIG_DIR: "/shell/config",
+      CLAUDE_SECURESTORAGE_CONFIG_DIR: "",
       PATH: "/host/bin",
     });
   });

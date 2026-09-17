@@ -52,7 +52,11 @@ fn validate_root(path: &Path) -> Result<PathBuf, Box<dyn Error>> {
     Ok(path.to_path_buf())
 }
 
-fn instance_environment(root: &Path, environment: &mut Vec<(OsString, OsString)>) {
+fn instance_environment(
+    root: &Path,
+    environment: &mut Vec<(OsString, OsString)>,
+    claude_credential_store: OsString,
+) {
     let paths = [
         ("CODEX_HOME", "codex"),
         ("CODEX_SQLITE_HOME", "codex"),
@@ -70,9 +74,16 @@ fn instance_environment(root: &Path, environment: &mut Vec<(OsString, OsString)>
         !paths.iter().any(|(name, _)| key == name)
             && key != "CODEXHOST_REMOTE_SSH_MANAGED"
             && key != "CODEXHOST_PLUGIN_DIRECTORY"
+            && key != "CLAUDE_SECURESTORAGE_CONFIG_DIR"
     });
     environment
         .extend(paths.map(|(key, relative)| (key.into(), root.join(relative).into_os_string())));
+    // LaunchServices does not inherit the shell environment. Preserve even an empty value:
+    // Claude uses it to select the default Keychain entry independently of CLAUDE_CONFIG_DIR.
+    environment.push((
+        "CLAUDE_SECURESTORAGE_CONFIG_DIR".into(),
+        claude_credential_store,
+    ));
 }
 
 #[derive(Serialize, Deserialize)]
@@ -265,7 +276,11 @@ fn start(root: &Path) -> Result<(), Box<dyn Error>> {
         Some(root.join("host").into_os_string()),
     );
     environment.extend(crate::launcher_proxy_environment());
-    instance_environment(root, &mut environment);
+    instance_environment(
+        root,
+        &mut environment,
+        std::env::var_os("CLAUDE_SECURESTORAGE_CONFIG_DIR").unwrap_or_default(),
+    );
     crate::supervise_desktop(
         &installation,
         &options,
@@ -343,13 +358,14 @@ mod tests {
             ),
             ("HOME".into(), "/Users/example".into()),
         ];
-        instance_environment(root, &mut environment);
+        instance_environment(root, &mut environment, OsString::new());
         assert!(environment.contains(&("CODEX_HOME".into(), root.join("codex").into_os_string())));
         assert!(environment.contains(&(
             "CLAUDE_CONFIG_DIR".into(),
             root.join("claude").into_os_string()
         )));
         assert!(environment.contains(&("HOME".into(), "/Users/example".into())));
+        assert!(environment.contains(&("CLAUDE_SECURESTORAGE_CONFIG_DIR".into(), OsString::new())));
         assert!(
             !environment
                 .iter()
@@ -363,6 +379,26 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn debug_environment_preserves_an_explicit_credential_store_without_duplicates() {
+        let root = Path::new("/private/debug");
+        let mut environment = vec![(
+            "CLAUDE_SECURESTORAGE_CONFIG_DIR".into(),
+            "/wrong/store".into(),
+        )];
+        instance_environment(root, &mut environment, "/Users/example/auth store".into());
+        let stores = environment
+            .iter()
+            .filter(|(key, _)| key == "CLAUDE_SECURESTORAGE_CONFIG_DIR")
+            .collect::<Vec<_>>();
+        assert_eq!(stores.len(), 1);
+        assert_eq!(stores[0].1, OsString::from("/Users/example/auth store"));
+        assert!(environment.contains(&(
+            "CLAUDE_CONFIG_DIR".into(),
+            root.join("claude").into_os_string()
+        )));
     }
 
     #[test]
