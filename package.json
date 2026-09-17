@@ -86,7 +86,7 @@
     "debug:stop": "bash tools/fork/with-toolchain.sh node tools/fork/debug.mjs stop",
     "debug:status": "bash tools/fork/with-toolchain.sh node tools/fork/debug.mjs status",
     "debug": "npm run debug:build && npm run debug:restart",
-    "debug:check": "bash tools/fork/with-toolchain.sh npm run typecheck && bash tools/fork/with-toolchain.sh vitest run --config tests/vitest.config.js tools/fork/launch.test.mjs tools/fork/debug.test.mjs packages/harness-broker/test/paths.test.ts packages/adapters/claude-code/test/sdk-transport.test.ts packages/host-runtime/test/run-host-runtime.test.ts packages/host-runtime/test/delegation-skill.test.ts && bash tools/fork/with-toolchain.sh cargo test --locked -p codexhost-launcher"
+    "debug:check": "bash tools/fork/with-toolchain.sh npm run typecheck && bash tools/fork/with-toolchain.sh vitest run --config tests/vitest.config.js tools/fork/launch.test.mjs tools/fork/debug.test.mjs tools/fork/claude-desktop.test.mjs packages/harness-broker/test/paths.test.ts packages/adapters/claude-code/test/sdk-transport.test.ts packages/host-runtime/test/run-host-runtime.test.ts packages/host-runtime/test/delegation-skill.test.ts && bash tools/fork/with-toolchain.sh cargo test --locked -p codexhost-launcher"
   },
   "devDependencies": {
     "@agentclientprotocol/sdk": "1.3.0",

@@ -44,6 +44,10 @@ If the daily Claude login uses a custom credential namespace, set `CLAUDE_SECURE
 
 Local Claude uses the existing native adapter owned by the debug Host. It does not use or install the remote Aqua LaunchAgent broker, and broker management commands reject the debug environment. Instance broker paths are available for explicitly configured broker tests, and inherited Host task identities and remote routing variables are removed from the development launch environment. Debug skips the Host's automatic user-wide delegation skill installation, so a candidate version cannot replace skills used by stable tasks.
 
+When the user has installed the separate `codexhost-claude-bridge` adapter as the user-level `codex_desktop` MCP, debug setup registers that same adapter in the private Claude profile and adds its SessionStart and lifecycle hooks. Only this bridge registration is imported. Its MCP environment points to the debug app copy and debug Codex home; its memory hook reads the daily `~/.codex/memories` as shared, read-only context. Existing debug configuration and unrelated MCPs/hooks remain in place, conflicting registrations stop setup before writes, and changed files are backed up in `claude/backups/desktop-bridge-*`. The adapter scripts remain in their existing installation and must remain available. Without that installation, debug setup does not invent a Desktop tool provider.
+
+After adding a bridge to an already running development profile, use a fresh Claude task so the native process reloads MCPs and hooks. A successful MCP connection exposes `mcp__codex_desktop__js` and `js_reset`; it does not establish application authorization or browser connectivity. Verify those through a real Host task, retaining its genuine task/turn identity and native permission prompts. A link to a Codex plugin does not make its tools available to a Claude task.
+
 Computer Use acts on the same macOS desktop in both instances. Do not run conflicting mouse/keyboard automation concurrently. Native tools and IAB require their own functional acceptance; process and storage isolation alone do not establish those integrations.
 
 ## Acceptance

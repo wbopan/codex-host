@@ -69,8 +69,13 @@ try {
   await rm(path.join(output, "app/codexhost-distribution.json"));
   await copyFile(path.join(root, "tools/fork/launch.mjs"), path.join(output, "launch.mjs"));
   const launcher = path.join(output, debug ? "Launch-Debug.command" : "Launch-Fork.command");
-  if (debug)
+  if (debug) {
     await copyFile(path.join(root, "tools/fork/debug.mjs"), path.join(output, "debug.mjs"));
+    await copyFile(
+      path.join(root, "tools/fork/claude-desktop.mjs"),
+      path.join(output, "claude-desktop.mjs"),
+    );
+  }
   await writeFile(
     launcher,
     debug

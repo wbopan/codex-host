@@ -17,6 +17,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { verifySnapshot } from "./launch.mjs";
+import { configureClaudeDesktop } from "./claude-desktop.mjs";
 
 const marker = "codexhost-debug-instance-v1\n";
 
@@ -132,6 +133,7 @@ export async function prepareInstance(instance, app = "/Applications/ChatGPT.app
     }
     if ((await readFile(version, "utf8")) !== marker)
       throw new Error("Unknown debug instance format");
+    await configureClaudeDesktop(instance, os.homedir());
   } finally {
     await rm(lock, { recursive: true });
   }
