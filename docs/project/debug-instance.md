@@ -58,6 +58,8 @@ Claude's `bypassPermissions` controls Claude tool approvals, not native MCP elic
 
 Computer Use acts on the same macOS desktop in both instances. Do not run conflicting mouse/keyboard automation concurrently. Native tools and IAB require their own functional acceptance; process and storage isolation alone do not establish those integrations.
 
+A real Claude task also completed a reversible TextEdit workflow: create a separate unsaved document, enter the exact test text once, verify it through accessibility and a screenshot, and discard that document while retaining the original window. Consecutive VS Code and TextEdit operations did not prompt after explicit standing app consent was enabled. VS Code with VSCodeVim showed delayed key delivery until a subsequent mouse action, even after raising the window and focusing the editor; clean exact-input validation in that app remains a known compatibility limitation. The same native `typeText` path succeeded immediately in TextEdit. The adapter does not modify the user's editor settings.
+
 ## Acceptance
 
 Verify an actual debug Desktop and Host chain while the stable task remains running, then rebuild, restart and stop debug. Record both instances' process IDs and start times, independent state files, and the absence of stable-process replacement. Test a real native backend turn through the debug runtime. Keep live logs and acceptance artifacts under ignored `.codexhost/`; do not commit task contents, credentials or machine-specific runtime records.
