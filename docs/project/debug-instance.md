@@ -54,6 +54,8 @@ Live development validation showed that this owner reaches the IAB API with the 
 
 On exit, the outer bridge allows the native owner to finish its scoped process cleanup. A live ephemeral MCP context shut down with all four observed owned processes gone. Permission requests remain transparent, including user declines; shutdown and permission-translation tests do not replace application-level acceptance.
 
+Claude's `bypassPermissions` controls Claude tool approvals, not native MCP elicitation. The optional private file `claude/codex-desktop.json` can set `{ "version": 1, "appApprovals": "allow" }` when the user wants standing consent for desktop-app access. The installed adapter's `app_approval_policy.py` recognizes only native `cua_repl` empty-form app confirmations that explicitly allow persistent approval, after the native app policy has allowed the target. Other requests still go through the permission UI, including device verification, authentication, input forms, audio recording and requests that disallow persistent approval. The policy file is read for every request; changing `appApprovals` to `ask` or removing the file revokes this standing consent. Setup does not enable it or import stable-instance permissions automatically.
+
 Computer Use acts on the same macOS desktop in both instances. Do not run conflicting mouse/keyboard automation concurrently. Native tools and IAB require their own functional acceptance; process and storage isolation alone do not establish those integrations.
 
 ## Acceptance

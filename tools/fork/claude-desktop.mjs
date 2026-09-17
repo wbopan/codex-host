@@ -38,6 +38,7 @@ export async function configureClaudeDesktop(instance, home) {
   for (const name of [
     "codex_desktop_mcp.py",
     "app_server_mcp.py",
+    "app_approval_policy.py",
     "bridge_common.py",
     "memory_hook.py",
     "lifecycle_hook.py",
