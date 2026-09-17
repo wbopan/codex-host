@@ -1212,7 +1212,7 @@ describe("ClaudeSdkTransport Question callbacks", () => {
     expect(queryOptions.permissionMode).toBe("default");
     expect(queryOptions).not.toHaveProperty("tools");
     expect(queryOptions.onUserDialog).toBeUndefined();
-    expect(queryOptions.onElicitation).toBeUndefined();
+    expect(queryOptions.onElicitation).toBeTypeOf("function");
     const canUseTool = queryOptions.canUseTool;
     if (!canUseTool) throw new Error("SDK canUseTool callback was not configured");
 
@@ -2227,5 +2227,122 @@ describe("ClaudeSdkTransport autonomous Subagent settlement ordering", () => {
     }
     expect(turns).toEqual([]);
     expect(immediate).toEqual([expect.objectContaining({ nativeSubagentId: "existing-child" })]);
+  });
+});
+
+function elicitationCallback(value: ReturnType<typeof fixture>) {
+  const callback = options(value).onElicitation;
+  if (!callback) throw new Error("MCP elicitation callback was not registered");
+  return callback;
+}
+
+describe("MCP approval elicitation", () => {
+  const request = {
+    serverName: "codex_desktop",
+    message: 'Allow Computer Use to use "TextEdit"?',
+    mode: "form" as const,
+    requestedSchema: { type: "object", properties: {} },
+  };
+  it.each([
+    ["allowOnce", "accept"],
+    ["deny", "decline"],
+  ] as const)("forwards the real %s decision as %s", async (decision, action) => {
+    const value = fixture();
+    await value.transport.start();
+    const events: ClaudeTurnEvent[] = [];
+    const turn = value.transport.runTurn("desktop test", "elicitation-turn", (e) => events.push(e));
+    const pending = elicitationCallback(value)(request, {
+      signal: new AbortController().signal,
+    });
+    expect(events).toEqual([
+      {
+        type: "interaction.requested",
+        request: {
+          type: "approval",
+          requestId: "claude-elicitation-1",
+          title: "MCP: codex_desktop",
+          description: request.message,
+        },
+      },
+    ]);
+    await expect(
+      value.transport.respondToInteraction({
+        type: "approval",
+        requestId: "claude-elicitation-1",
+        decision: "allowForSession",
+      }),
+    ).rejects.toThrow("one-time");
+    await value.transport.respondToInteraction({
+      type: "approval",
+      requestId: "claude-elicitation-1",
+      decision,
+    });
+    await expect(pending).resolves.toEqual(
+      action === "accept" ? { action, content: {} } : { action },
+    );
+    expect(events.at(-1)).toEqual({
+      type: "interaction.closed",
+      requestId: "claude-elicitation-1",
+      reason: "responded",
+    });
+    completeTurn(value.fakeQuery);
+    await turn;
+    await value.transport.close();
+  });
+  it("cancels aborted requests and outstanding prompts when the turn ends", async () => {
+    const value = fixture();
+    await value.transport.start();
+    const events: ClaudeTurnEvent[] = [];
+    const turn = value.transport.runTurn("desktop test", "elicitation-turn", (e) => events.push(e));
+    const controller = new AbortController();
+    const first = elicitationCallback(value)(request, { signal: controller.signal });
+    const second = elicitationCallback(value)(request, { signal: new AbortController().signal });
+    controller.abort();
+    await expect(first).resolves.toEqual({ action: "cancel" });
+    completeTurn(value.fakeQuery);
+    await turn;
+    await expect(second).resolves.toEqual({ action: "cancel" });
+    expect(events.filter((e) => e.type === "interaction.closed")).toHaveLength(2);
+    await expect(
+      value.transport.respondToInteraction({
+        type: "approval",
+        requestId: "claude-elicitation-2",
+        decision: "allowOnce",
+      }),
+    ).rejects.toThrow("not pending");
+    await value.transport.close();
+  });
+  it("declines forms needing input, URL auth and unsupported schemas without showing an approval", async () => {
+    const value = fixture();
+    await value.transport.start();
+    const events: ClaudeTurnEvent[] = [];
+    const turn = value.transport.runTurn("desktop test", "elicitation-turn", (e) => events.push(e));
+    const variants = [
+      { ...request, mode: "url" as const, url: "https://example.com/auth" },
+      {
+        ...request,
+        requestedSchema: { type: "object", properties: { password: { type: "string" } } },
+      },
+      { ...request, requestedSchema: { type: "object", required: ["answer"] } },
+      { ...request, requestedSchema: { type: "object", allOf: [] } },
+      { serverName: request.serverName, message: request.message, mode: request.mode },
+      { ...request, message: "x".repeat(501) },
+    ];
+    for (const input of variants)
+      await expect(
+        elicitationCallback(value)(input, { signal: new AbortController().signal }),
+      ).resolves.toEqual({ action: "decline" });
+    expect(events).toEqual([]);
+    completeTurn(value.fakeQuery);
+    await turn;
+    await value.transport.close();
+  });
+  it("cancels elicitation outside an active turn", async () => {
+    const value = fixture();
+    await value.transport.start();
+    await expect(
+      elicitationCallback(value)(request, { signal: new AbortController().signal }),
+    ).resolves.toEqual({ action: "cancel" });
+    await value.transport.close();
   });
 });

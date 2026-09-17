@@ -36,6 +36,7 @@
 
 | 文档 | 内容与阅读时机 |
 | --- | --- |
+| [`harnesses/claude-code/claude-code-mcp-elicitation.md`](harnesses/claude-code/claude-code-mcp-elicitation.md) | MCP 一次性确认的 SDK 回调、Desktop 审批与取消语义。 |
 | [`harnesses/claude-code/claude-code-plan-mode.md`](harnesses/claude-code/claude-code-plan-mode.md) | Claude Code 规划模式、计划退出确认与权限状态边界；修改 Plan Mode 时阅读。 |
 | [`harnesses/claude-code/claude-code-edit-recovery.md`](harnesses/claude-code/claude-code-edit-recovery.md) | 最后一条消息编辑后的独立 Session、空历史保留和关闭语义；修改编辑恢复时阅读。 |
 

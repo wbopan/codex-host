@@ -3,6 +3,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import {
   query,
   type CanUseTool,
+  type OnElicitation,
   type PermissionResult,
   type PermissionUpdate,
   type Query,
@@ -396,6 +397,7 @@ export class ClaudeSdkTransport implements ClaudeTurnTransport {
   #consumeTask: Promise<void> | null = null;
   #stderrTail = "";
   #interactionOrdinal = 0;
+  #elicitations = new Map<string, { settle(action: "accept" | "decline" | "cancel"): void }>();
   #provider: string | undefined;
   #query: Query | null = null;
   #started = false;
@@ -464,6 +466,7 @@ export class ClaudeSdkTransport implements ClaudeTurnTransport {
         permissionMode: this.#permissionMode,
         ...(allowsDangerouslySkipPermissions() ? { allowDangerouslySkipPermissions: true } : {}),
         canUseTool: (toolName, input, options) => this.#canUseTool(toolName, input, options),
+        onElicitation: (request, options) => this.#onElicitation(request, options),
         persistSession: true,
         includePartialMessages: true,
         forwardSubagentText: true,
@@ -584,6 +587,16 @@ export class ClaudeSdkTransport implements ClaudeTurnTransport {
   }
 
   respondToInteraction(response: ClaudeInteractionResponse): Promise<void> {
+    const elicitation = this.#elicitations.get(response.requestId);
+    if (elicitation) {
+      if (response.type !== "approval" || !["allowOnce", "deny"].includes(response.decision)) {
+        return Promise.reject(
+          new Error("Claude MCP elicitation only supports a one-time decision"),
+        );
+      }
+      elicitation.settle(response.decision === "allowOnce" ? "accept" : "decline");
+      return Promise.resolve();
+    }
     const active = this.#active;
     const pending = active?.interactions.get(response.requestId);
     if (!active || !pending) {
@@ -676,6 +689,64 @@ export class ClaudeSdkTransport implements ClaudeTurnTransport {
     if (!this.#closePromise) this.#closePromise = this.#close();
     return this.#closePromise;
   }
+
+  #onElicitation: OnElicitation = (request, { signal }) => {
+    const active = this.#active;
+    // Approval-only forms carry no user fields. Never silently accept URL auth or
+    // turn a structured form into an empty, apparently successful answer.
+    const schema = request.requestedSchema;
+    if (!active || signal.aborted) return Promise.resolve({ action: "cancel" });
+    if (
+      (request.mode !== undefined && request.mode !== "form") ||
+      !isRecord(schema) ||
+      schema.type !== "object" ||
+      (schema.properties !== undefined &&
+        (!isRecord(schema.properties) || Object.keys(schema.properties).length > 0)) ||
+      (schema.required !== undefined &&
+        (!Array.isArray(schema.required) || schema.required.length > 0)) ||
+      Object.keys(schema).some(
+        (key) =>
+          ![
+            "type",
+            "properties",
+            "required",
+            "additionalProperties",
+            "$schema",
+            "title",
+            "description",
+          ].includes(key),
+      ) ||
+      !request.message.trim() ||
+      request.message.length > APPROVAL_DESCRIPTION_MAX_LENGTH ||
+      !boundedDisplayText(request.serverName, 80)
+    )
+      return Promise.resolve({ action: "decline" });
+    const requestId = `claude-elicitation-${++this.#interactionOrdinal}`;
+    return new Promise((resolve) => {
+      const onAbort = () => settle("cancel");
+      const settle = (action: "accept" | "decline" | "cancel") => {
+        if (!this.#elicitations.delete(requestId)) return;
+        signal.removeEventListener("abort", onAbort);
+        active.onEvent({
+          type: "interaction.closed",
+          requestId,
+          reason: action === "cancel" ? "cancelled" : "responded",
+        });
+        resolve(action === "accept" ? { action, content: {} } : { action });
+      };
+      this.#elicitations.set(requestId, { settle });
+      signal.addEventListener("abort", onAbort, { once: true });
+      active.onEvent({
+        type: "interaction.requested",
+        request: {
+          type: "approval",
+          requestId,
+          title: `MCP: ${request.serverName.slice(0, 80)}`,
+          description: request.message,
+        },
+      });
+    });
+  };
 
   #canUseTool(
     toolName: string,
@@ -770,6 +841,7 @@ export class ClaudeSdkTransport implements ClaudeTurnTransport {
   }
 
   #closeInteractions(active: ActiveTurn, reason: "cancelled" | "superseded"): void {
+    for (const pending of [...this.#elicitations.values()]) pending.settle("cancel");
     for (const pending of [...active.interactions.values()]) {
       this.#settleInteraction(
         active,
