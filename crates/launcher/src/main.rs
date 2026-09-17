@@ -2,6 +2,8 @@
 
 mod active_update;
 mod compatibility;
+#[cfg(target_os = "macos")]
+mod debug_instance;
 mod desktop_attachment;
 mod desktop_path_overrides;
 mod installation_layout;
@@ -693,6 +695,7 @@ fn supervise_desktop(
     environment: &[(OsString, OsString)],
     control: &RuntimeControl,
     descriptor_path: &Path,
+    debug_root: Option<&Path>,
 ) -> Result<(), Box<dyn Error>> {
     startup_trace("launching Codex Desktop");
     let desktop_arguments =
@@ -710,6 +713,12 @@ fn supervise_desktop(
         Duration::from_secs(30),
     )?;
     startup_trace("Codex Desktop launched");
+    #[cfg(target_os = "macos")]
+    let _debug_record = debug_root
+        .map(|root| debug_instance::record_process(root, desktop.root_snapshot()))
+        .transpose()?;
+    #[cfg(target_os = "linux")]
+    let _ = debug_root;
     let mut controller = start_desktop_controller(options, control, environment)?;
     let desktop_pid = desktop.root_snapshot().id;
     startup_trace("waiting for Host chain");
@@ -727,14 +736,16 @@ fn supervise_desktop(
     let mut last_desktop_tree_refresh = Instant::now();
     loop {
         #[cfg(target_os = "macos")]
-        if let Err(error) = start_pending_update(&mut started_update_request) {
+        if debug_root.is_none()
+            && let Err(error) = start_pending_update(&mut started_update_request)
+        {
             eprintln!("codexhost launcher: pending update could not be started: {error}");
         }
         #[cfg(target_os = "macos")]
         let helper_started = started_update_request.is_some();
         #[cfg(target_os = "linux")]
         let helper_started = false;
-        if should_stop_desktop_for_update(helper_started) {
+        if debug_root.is_none() && should_stop_desktop_for_update(helper_started) {
             if let Err(error) = stop_managed_desktop_for_update(&mut desktop, &mut controller) {
                 eprintln!(
                     "codexhost launcher: managed Desktop could not be stopped for update: {error}"
@@ -780,6 +791,7 @@ fn supervise_desktop(
     environment: &[(OsString, OsString)],
     control: &RuntimeControl,
     descriptor_path: &Path,
+    _debug_root: Option<&Path>,
 ) -> Result<(), Box<dyn Error>> {
     startup_trace("launching Codex Desktop");
     let desktop_arguments =
@@ -1090,6 +1102,7 @@ fn launch(
             &environment,
             &control,
             &descriptor_path,
+            None,
         );
         #[cfg(target_os = "windows")]
         match result {
@@ -1181,6 +1194,7 @@ fn launch(
         &environment,
         &control,
         &descriptor_path,
+        None,
     )
 }
 
@@ -1211,6 +1225,8 @@ fn run(arguments: &[String]) -> Result<(), Box<dyn Error>> {
             inspect(custom_install_root.as_deref())
         }
         Some("launch") => launch(parse_launch_options(&arguments[1..])?, false),
+        #[cfg(target_os = "macos")]
+        Some("debug") => debug_instance::run(&arguments[1..]),
         Some("open-loopback-url") if arguments.len() == 1 => {
             let url = read_bounded_loopback_url(std::io::stdin().lock())?;
             validate_loopback_root_url(&url)?;

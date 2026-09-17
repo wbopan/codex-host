@@ -23,6 +23,8 @@ The snapshot is independent of the development checkout's `node_modules` and the
 
 ## Launch and rollback
 
+For daily development alongside an active stable Desktop, use the [independent debug instance](debug-instance.md). `npm run debug:build` accepts uncommitted source and publishes a new immutable debug snapshot. `npm run debug:start` opens it with independent state; `npm run debug:restart` replaces only the development instance. Stable snapshot promotion below remains a separate operation.
+
 Locate the snapshot using `.codexhost/latest-build.txt`. Its `Launch-Fork.command --dry-run` verifies the inventory and prints the launch command without starting anything. Save work and quit Codex Desktop normally before running or double-clicking `Launch-Fork.command` without that option. The guard rejects a running Desktop or Host and does not terminate processes.
 
 The launcher reuses the existing Host data directory and the official Codex Desktop installation. Keep the official Host application available. After quitting a fork runtime, reopen the official Host application to return to it, or launch a previously validated snapshot to revert only the Host build. Build rollback does not restore session data or undo future database migrations; review migration compatibility before upstream upgrades.

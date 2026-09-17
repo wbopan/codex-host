@@ -10,6 +10,12 @@ export function defaultHarnessBrokerDirectory(
   environment: NodeJS.ProcessEnv = process.env,
 ): string {
   const home = environment.HOME || os.homedir();
+  if (environment.CODEXHOST_HARNESS_BROKER_DIR) {
+    if (!path.isAbsolute(environment.CODEXHOST_HARNESS_BROKER_DIR)) {
+      throw new Error("Harness broker directory must be absolute");
+    }
+    return environment.CODEXHOST_HARNESS_BROKER_DIR;
+  }
   return path.join(home, ".codexhost", "harness-broker");
 }
 

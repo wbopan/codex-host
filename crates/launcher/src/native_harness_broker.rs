@@ -92,6 +92,12 @@ pub fn parse_native_harness_broker_cli(
 
 #[cfg(target_os = "macos")]
 pub fn run_native_harness_broker_cli(arguments: &[String]) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("CODEXHOST_DEBUG_INSTANCE_DIR").is_some() {
+        return Err(
+            "debug uses a local native Harness; global LaunchAgent broker management is disabled"
+                .into(),
+        );
+    }
     let cli = parse_native_harness_broker_cli(arguments)?;
     let bundled_resources = if cli.node.is_none() {
         Some(InstalledResources::from_current_executable()?)

@@ -102,7 +102,11 @@ async function prepareDelegationRuntime(input: {
     [DELEGATION_RUNTIME_ENDPOINT_ENV]: server.endpoint,
     [DELEGATION_RUNTIME_TOKEN_ENV]: token,
   };
-  await installDelegationSkills()
+  // Debug builds may read the user's shared skills, but must not upgrade them
+  // underneath the stable instance when testing a different Host version.
+  await (
+    input.environment.CODEXHOST_DEBUG_INSTANCE_DIR ? Promise.resolve([]) : installDelegationSkills()
+  )
     .then((results) => {
       for (const result of results) {
         if (result.status === "conflict") {

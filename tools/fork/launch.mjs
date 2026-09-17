@@ -75,6 +75,7 @@ async function main() {
   }
   const root = import.meta.dirname;
   const manifest = await verifySnapshot(root);
+  if (manifest.debug) throw new Error("Use Launch-Debug.command for an isolated debug snapshot.");
   const executable = path.join(root, "bin/codexhost");
   if (args[0] === "--dry-run") {
     console.log(
