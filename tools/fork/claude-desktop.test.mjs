@@ -15,7 +15,13 @@ async function fixture() {
   await mkdir(path.join(instance, "claude"), { recursive: true });
   const bridge = path.join(home, "bridge");
   await mkdir(bridge);
-  for (const file of ["codex_desktop_mcp.py", "memory_hook.py", "lifecycle_hook.py"])
+  for (const file of [
+    "codex_desktop_mcp.py",
+    "app_server_mcp.py",
+    "bridge_common.py",
+    "memory_hook.py",
+    "lifecycle_hook.py",
+  ])
     await writeFile(path.join(bridge, file), "# fixture\n");
   await writeFile(
     path.join(home, ".claude.json"),
@@ -50,6 +56,7 @@ it("uses debug runtime paths and shared memory while preserving private configur
   });
   const settings = JSON.parse(await readFile(settingsFile, "utf8"));
   expect(settings.permissions).toEqual({ allow: [] });
+  expect(settings.env.CODEXHOST_CUA_OWNER).toBe("app-server");
   expect(settings.hooks.SessionStart[0].hooks[0].command).toContain("CODEX_HOME=");
   expect(settings.hooks.SessionStart[0].hooks[0].command).toContain("'\\''");
   expect(await configureClaudeDesktop(instance, home)).toEqual({
@@ -72,4 +79,23 @@ it("leaves an unconfigured user's profile alone", async () => {
   const { home, instance } = await fixture();
   await writeFile(path.join(home, ".claude.json"), "{}");
   expect(await configureClaudeDesktop(instance, home)).toEqual({ configured: false });
+});
+it("preserves an explicit debug MCP owner override", async () => {
+  const { home, instance } = await fixture();
+  const file = path.join(instance, "claude/settings.json");
+  await writeFile(file, JSON.stringify({ env: { CODEXHOST_CUA_OWNER: "direct", KEEP: "value" } }));
+  await configureClaudeDesktop(instance, home);
+  expect(JSON.parse(await readFile(file, "utf8")).env).toEqual({
+    CODEXHOST_CUA_OWNER: "direct",
+    KEEP: "value",
+  });
+});
+it("rejects an incomplete bridge installation before writing configuration", async () => {
+  const { home, instance } = await fixture();
+  await rm(path.join(home, "bridge/app_server_mcp.py"));
+  await expect(configureClaudeDesktop(instance, home)).rejects.toThrow();
+  for (const file of [".claude.json", "settings.json"])
+    await expect(readFile(path.join(instance, "claude", file))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
 });

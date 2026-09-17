@@ -35,7 +35,13 @@ export async function configureClaudeDesktop(instance, home) {
     throw new Error("Unrecognized user codex_desktop bridge; debug configuration was not changed");
   }
   const directory = path.dirname(script);
-  for (const name of ["codex_desktop_mcp.py", "memory_hook.py", "lifecycle_hook.py"]) {
+  for (const name of [
+    "codex_desktop_mcp.py",
+    "app_server_mcp.py",
+    "bridge_common.py",
+    "memory_hook.py",
+    "lifecycle_hook.py",
+  ]) {
     if (!(await lstat(path.join(directory, name))).isFile())
       throw new Error(`Missing Desktop bridge script: ${name}`);
   }
@@ -60,6 +66,10 @@ export async function configureClaudeDesktop(instance, home) {
   const originalSettings = JSON.stringify(settings);
   config.mcpServers ??= {};
   config.mcpServers.codex_desktop = desired;
+  // The official app-server owns cua_repl so IAB receives a supported native peer.
+  // Keep an explicit debug override, including the direct owner for diagnostics.
+  settings.env ??= {};
+  settings.env.CODEXHOST_CUA_OWNER ??= "app-server";
   settings.hooks ??= {};
   for (const event of ["SessionStart", "Stop", "StopFailure", "SessionEnd"]) {
     const memory = event === "SessionStart";
