@@ -58,7 +58,7 @@ export function requireStoppedDesktop(processes) {
       .split("\n")
       .some(
         (line) =>
-          /\/(?:ChatGPT|Codex)\.app\/Contents\//u.test(line) ||
+          /\/(?:ChatGPT|Codex)\.app\/Contents\/MacOS\/(?:ChatGPT|Codex)$/u.test(line.trim()) ||
           /\/codexhost(?:-shim)?$/u.test(line.trim()),
       )
   ) {

@@ -73,4 +73,16 @@ describe("fork snapshot launch", () => {
     }
     expect(() => requireStoppedDesktop("/usr/bin/login\n/opt/homebrew/bin/node\n")).not.toThrow();
   });
+
+  it("allows independent CLI services and crash reporters from the Desktop bundle", () => {
+    const processes = [
+      "/Applications/ChatGPT.app/Contents/Resources/codex",
+      "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node_repl",
+      "/Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Helpers/browser_crashpad_handler",
+    ].join("\n");
+    expect(() => requireStoppedDesktop(processes)).not.toThrow();
+    expect(() =>
+      requireStoppedDesktop(`${processes}\n/Applications/ChatGPT.app/Contents/MacOS/ChatGPT`),
+    ).toThrow("still running");
+  });
 });
