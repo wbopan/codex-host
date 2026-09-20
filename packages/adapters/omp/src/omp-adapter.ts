@@ -515,6 +515,7 @@ function synthesizeFileChange(
         path: displayed.path,
         kind: "add",
         unifiedDiff: createTwoFilesPatch(oldHeader, newHeader, "", content, "", "", { context: 3 }),
+        diffScope: "fragment",
       },
     ];
   }
@@ -536,6 +537,7 @@ function synthesizeFileChange(
       unifiedDiff: createTwoFilesPatch(oldHeader, newHeader, oldText, newText, "", "", {
         context: 3,
       }),
+      diffScope: "fragment",
     },
   ];
 }
@@ -1030,7 +1032,7 @@ class OmpHarnessSession implements HarnessSession {
   }
 
   async #selectModel(command: ModelSelectCommand): Promise<HarnessResult<ModelSelectCompleted>> {
-    if (this.#acceptingTurn || this.#active || this.#configuring) {
+    if (this.#acceptingTurn || this.#configuring) {
       return {
         ok: false,
         error: {
@@ -1105,7 +1107,7 @@ class OmpHarnessSession implements HarnessSession {
         },
       };
     }
-    if (this.#acceptingTurn || this.#active || this.#configuring) {
+    if (this.#acceptingTurn || this.#configuring) {
       return {
         ok: false,
         error: {
@@ -1705,7 +1707,13 @@ class OmpHarnessSession implements HarnessSession {
               id: "answer",
               type: "choice" as const,
               prompt: request.title,
-              options: request.options.map((option) => ({ value: option, label: option })),
+              options: request.options.map((option, index) => ({
+                value: option,
+                label: option,
+                ...(request.optionDetails?.[index]?.description
+                  ? { description: request.optionDetails[index].description }
+                  : {}),
+              })),
               multiple: false,
               allowOther: false,
               optional: false,
@@ -1958,12 +1966,17 @@ class OmpHarnessSession implements HarnessSession {
       try {
         const kind = fileMutatingKind(event.toolName);
         const args = tool.arguments;
-        if (kind && synthesizeFileChange(kind, args, this.#cwd)) {
+        if (kind && !patchFromResult(event.result) && synthesizeFileChange(kind, args, this.#cwd)) {
           return;
         }
         const changes = reliableFileChange(event.toolName, args, event.result, this.#cwd);
         if (changes) {
-          const fileItem: HostItem = { type: "fileChange", itemId: this.#newItemId(), changes };
+          const fileItem: HostItem = {
+            type: "fileChange",
+            itemId: this.#newItemId(),
+            sourceItemIds: [tool.item.itemId],
+            changes,
+          };
           this.#event({ type: "item.started", turnId: active.command.turnId, item: fileItem });
           this.#completeItem(active, fileItem, { status: "succeeded" });
         }

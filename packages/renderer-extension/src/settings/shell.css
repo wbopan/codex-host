@@ -1,4 +1,5 @@
 :host {
+  --settings-titlebar-height: env(titlebar-area-height, 0px);
   --settings-bg: light-dark(#ffffff, #202020);
   --settings-sidebar: light-dark(#f7f7f8, #191919);
   --settings-panel: light-dark(#ffffff, #232323);
@@ -71,8 +72,11 @@
 }
 
 .codexhost-settings-dialog {
+  /* Native window controls sit above the DOM top layer. Center below them. */
+  inset: var(--settings-titlebar-height) 0 0;
   width: min(1120px, calc(100vw - 32px));
-  height: min(780px, calc(100vh - 32px));
+  height: min(780px, calc(100vh - var(--settings-titlebar-height) - 32px));
+  -webkit-app-region: no-drag;
   max-width: none;
   max-height: none;
   margin: auto;
@@ -86,6 +90,9 @@
 }
 
 .codexhost-settings-dialog::backdrop {
+  /* Backdrops do not inherit the shell's custom properties. */
+  top: env(titlebar-area-height, 0px);
+  -webkit-app-region: no-drag;
   background: light-dark(rgb(0 0 0 / 24%), rgb(0 0 0 / 56%));
   backdrop-filter: blur(1px);
 }
@@ -1122,6 +1129,52 @@
   padding: 12px;
 }
 
+.settings-harness-launch {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--settings-divider);
+}
+
+.settings-harness-launch label {
+  display: grid;
+  gap: 8px;
+  color: var(--settings-text);
+  font-size: 12px;
+}
+
+.settings-harness-launch input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  color: var(--settings-text);
+  background: var(--settings-surface);
+  border: 1px solid var(--settings-divider);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.settings-harness-launch input:focus-visible {
+  outline: 2px solid var(--settings-focus);
+  outline-offset: 2px;
+}
+
+.settings-harness-launch p {
+  margin: 0;
+  color: var(--settings-muted);
+  font-size: 11px;
+  line-height: 16px;
+  overflow-wrap: anywhere;
+}
+
+.settings-harness-launch__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .settings-connection-install-callout {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
@@ -1802,7 +1855,7 @@
 @media (max-width: 720px) {
   .codexhost-settings-dialog {
     width: calc(100vw - 16px);
-    height: calc(100vh - 16px);
+    height: calc(100vh - var(--settings-titlebar-height) - 16px);
     border-radius: 10px;
   }
 

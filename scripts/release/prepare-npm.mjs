@@ -79,6 +79,18 @@ const runtimeLicenses = [
     source: "scripts/release/licenses/opencode-ai-sdk-1.18.25-MIT.txt",
     output: "OpenCode-SDK-LICENSE.txt",
   },
+  {
+    packageName: "@qoder-ai/qoder-agent-sdk",
+    license: "SEE LICENSE IN LICENSE",
+    source: "LICENSE",
+    output: "Qoder-Agent-SDK-LICENSE.txt",
+  },
+  {
+    packageName: "@qodercn-ai/qodercn-agent-sdk",
+    license: "SEE LICENSE IN LICENSE",
+    source: "LICENSE",
+    output: "QoderCN-Agent-SDK-LICENSE.txt",
+  },
   { packageName: "diff", license: "BSD-3-Clause", source: "LICENSE", output: "diff-LICENSE.txt" },
   { packageName: "lucide", license: "ISC", source: "LICENSE", output: "lucide-LICENSE.txt" },
   {
@@ -221,6 +233,8 @@ export function expectedNpmPackagePaths(target) {
     "licenses/Claude-Agent-SDK-LICENSE.md",
     "licenses/MCP-SDK-LICENSE.txt",
     "licenses/OpenCode-SDK-LICENSE.txt",
+    "licenses/Qoder-Agent-SDK-LICENSE.txt",
+    "licenses/QoderCN-Agent-SDK-LICENSE.txt",
     "licenses/opencodex-LICENSE.txt",
     "licenses/diff-LICENSE.txt",
     "licenses/lucide-LICENSE.txt",
@@ -276,6 +290,7 @@ import { fileURLToPath } from "node:url";
 
 const version = ${JSON.stringify(version)};
 const userArguments = process.argv.slice(2);
+const repositoryUrl = "https://github.com/BytePioneer-AI/codex-host";
 const startupTraceStartedAt = Date.now();
 function startupTrace(stage) {
   if (process.env.CODEXHOST_STARTUP_TRACE !== "1") return;
@@ -283,12 +298,34 @@ function startupTrace(stage) {
     "[codexhost startup +" + (Date.now() - startupTraceStartedAt) + "ms] npm: " + stage,
   );
 }
+function printStarPrompt() {
+  const locale =
+    process.env.LC_ALL ??
+    process.env.LC_MESSAGES ??
+    process.env.LANG ??
+    Intl.DateTimeFormat().resolvedOptions().locale;
+  const prompt = /^zh(?:[_-]|$)/iu.test(locale)
+    ? "⭐ 如果这个项目对你有帮助，请给我们一个 Star ⭐"
+    : "⭐ If this project helps you, please give us a Star ⭐";
+  const useColor =
+    process.stdout.isTTY && process.env.NO_COLOR === undefined && process.env.TERM !== "dumb";
+  if (useColor) {
+    console.log(
+      "\\u001B[33m" + prompt + "\\u001B[0m\\n\\u001B[36m" + repositoryUrl + "\\u001B[0m",
+    );
+    return;
+  }
+  console.log(prompt + "\\n" + repositoryUrl);
+}
 if (
   userArguments.length === 1 &&
   (userArguments[0] === "--version" || userArguments[0] === "-v")
 ) {
   console.log(version);
   process.exit(0);
+}
+if (userArguments.length === 0 || userArguments[0] === "launch") {
+  printStarPrompt();
 }
 startupTrace("entry");
 

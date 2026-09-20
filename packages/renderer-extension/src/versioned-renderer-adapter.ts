@@ -164,8 +164,11 @@ function transportModelIdForAgent(agent: RendererAgent): string | null {
   if (agent === "omp") return OMP_TRANSPORT_MODEL_ID;
   if (agent === "antigravity") return ANTIGRAVITY_TRANSPORT_MODEL_ID;
   if (agent === "kiro-cli") return encodeHarnessPluginRoute({ harnessId: KIRO_CLI_HARNESS_ID });
-  if (agent === "codebuddy" || agent === "cursor-cli")
+  if (agent === "codebuddy" || agent === "workbuddy" || agent === "cursor-cli")
     return encodeHarnessPluginRoute({ harnessId: harnessIdSchema.parse(agent) });
+  if (agent === "qoder" || agent === "qoder-cn") {
+    return encodeHarnessPluginRoute({ harnessId: harnessIdSchema.parse(agent) });
+  }
   return null;
 }
 
@@ -966,7 +969,10 @@ export function modelSelectionForAgent(
                 ? ompTransportModelId(model, thinkingOptionId, permissionModeId)
                 : agent === "antigravity"
                   ? antigravityTransportModelId(model, permissionModeId, thinkingOptionId)
-                  : agent === "kiro-cli" || agent === "codebuddy" || agent === "cursor-cli"
+                  : agent === "kiro-cli" ||
+                      agent === "codebuddy" ||
+                      agent === "workbuddy" ||
+                      agent === "cursor-cli"
                     ? encodeHarnessPluginRoute({
                         harnessId: harnessIdSchema.parse(agent),
                         ...(model ? { model } : {}),
@@ -975,7 +981,14 @@ export function modelSelectionForAgent(
                       })
                     : agent === "hermes"
                       ? hermesTransportModelId(model, permissionModeId)
-                      : transportModelIdForAgent(agent);
+                      : agent === "qoder" || agent === "qoder-cn"
+                        ? encodeHarnessPluginRoute({
+                            harnessId: harnessIdSchema.parse(agent),
+                            ...(model ? { model } : {}),
+                            ...(thinkingOptionId ? { thinkingOptionId } : {}),
+                            ...(permissionModeId ? { permissionModeId } : {}),
+                          })
+                        : transportModelIdForAgent(agent);
   return transportModelId ? { model: transportModelId, reasoningEffort } : officialSelection;
 }
 
