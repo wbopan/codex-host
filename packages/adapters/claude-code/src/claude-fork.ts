@@ -1,3 +1,4 @@
+import { realpath } from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 
@@ -145,7 +146,20 @@ export async function forkClaudeSession(
       error: error("protocolError", "Claude Code Session working directory is unavailable", false),
     };
   }
-  if (path.resolve(sourceInfo.cwd) !== input.cwd) {
+  let sameCwd = path.resolve(sourceInfo.cwd) === input.cwd;
+  if (!sameCwd) {
+    try {
+      const [sourceCwd, targetCwd] = await Promise.all([
+        realpath(sourceInfo.cwd),
+        realpath(input.cwd),
+      ]);
+      sameCwd = sourceCwd === targetCwd;
+    } catch {
+      // An unresolved alias cannot establish that both paths own the same workspace.
+      sameCwd = false;
+    }
+  }
+  if (!sameCwd) {
     return {
       ok: false,
       error: error("unsupported", "Claude Code cannot Fork across working directories", false),

@@ -2,6 +2,8 @@
 
 Editing the last message retains the earlier native history in an independent Session. When no earlier Turn remains, codexhost persists an empty Session reservation before returning the edit result. Closing before resend and reopening the Thread preserves that identity and its Model, Thinking and Permission Mode.
 
+Fork (including Side Chat) and edit recovery accept working-directory aliases that resolve to the same physical directory. This permits a retained symlink after a project rename. Different directories, or differing paths whose identity cannot be resolved, remain unsupported. Identity comparison leaves the caller's working directory and stored Session metadata unchanged.
+
 Reservations live under `CLAUDE_CONFIG_DIR/codexhost/pending-sessions` (default `~/.claude/codexhost/pending-sessions`). A creation claim prevents two wrappers from independently starting the same reserved Session. A missing transcript after native input was submitted is an error, not an empty conversation. Do not remove reservation metadata to repair a missing transcript.
 
 Native interruption markers belong to their matching human prompt; literal user text is retained. An immediate history read waits for known completed native messages to reach the transcript and returns a retryable busy error if persistence remains delayed.
