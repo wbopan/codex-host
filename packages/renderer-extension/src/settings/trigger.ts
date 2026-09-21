@@ -175,9 +175,9 @@ export function mountRendererSettingsTrigger(
   button.style.display = "inline-flex";
   button.style.alignItems = "center";
   button.style.justifyContent = "center";
+  button.style.width = "28px";
   button.style.height = "28px";
-  button.style.padding = "0 12px";
-  button.style.gap = "6px";
+  button.style.padding = "0";
   button.style.border = "0";
   button.style.borderRadius = "8px";
   button.style.background = "transparent";
@@ -186,15 +186,7 @@ export function mountRendererSettingsTrigger(
   button.style.opacity = available ? "1" : "0.5";
   button.style.outlineOffset = "2px";
   button.style.setProperty("-webkit-app-region", "no-drag");
-  button.append(createRendererSettingsBrandIcon(24));
-
-  const brandLabel = ownerDocument.createElement("span");
-  brandLabel.textContent = "CodexHost";
-  brandLabel.style.fontSize = "13px";
-  brandLabel.style.fontWeight = "600";
-  brandLabel.style.lineHeight = "1";
-  brandLabel.style.whiteSpace = "nowrap";
-  button.append(brandLabel);
+  button.append(createRendererSettingsBrandIcon(18));
 
   const updateButton = ownerDocument.createElement("button");
   updateButton.type = "button";
